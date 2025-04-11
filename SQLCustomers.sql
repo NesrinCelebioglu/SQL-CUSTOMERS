@@ -1,0 +1,207 @@
+﻿
+
+--1--Erstellen einer Datenbank namens "Customers"und hinzufügen der Excel-Datei als Tabelle.
+
+CREATE DATABASE CUSTOMERS 
+
+CREATE TABLE CUSTOMERS 
+(ID INT IDENTITY(1,1) PRIMARY KEY,
+NAMESURNAME VARCHAR(100), TCNUMBER VARCHAR(11), 
+GENDER VARCHAR(1), EMAIL VARCHAR(100),  BIRTHDATE DATE, 
+CITYID INT, DISTRICTID INT,
+TELNR1 VARCHAR(15), TELNR2 VARCHAR(15))
+
+
+CREATE TABLE CITIES
+(ID INT IDENTITY(1,1) PRIMARY KEY,
+CITY VARCHAR (50))
+
+CREATE TABLE DISTRICTS
+(ID INT IDENTITY(1,1) PRIMARY KEY,
+CITYID INT, DISTRICT VARCHAR (50))
+
+
+--2--Schreiben Sie die Abfrage, die Personen aus der Customers-Tabelle abruft, deren Name mit dem Buchstaben 'A' beginnt. 
+
+
+SELECT* FROM CUSTOMERS
+WHERE NAMESURNAME LIKE 'A%'
+
+--3--Rufen Sie die Kunden ab, die zwischen den Jahren 1990 und 1995 (einschließlich) geboren wurden.
+
+
+SELECT* FROM CUSTOMERS
+WHERE BIRTHDATE_ BETWEEN '1990-01-01' AND '1995-12-31'
+
+--4-Schreiben Sie eine Abfrage mit JOIN, um die in Istanbul lebenden Personen abzurufen.
+
+SELECT
+    CUSTOMERS.ID,
+    CUSTOMERS.NAMESURNAME,
+    CITIES.CITY,
+    DISTRICTS.DISTRICT
+FROM CUSTOMERS 
+JOIN DISTRICTS ON CUSTOMERS.DISTRICTID = DISTRICTS.ID
+JOIN CITIES ON DISTRICTS.CITYID = CITIES.CITYID
+WHERE CITIES.CITY = 'İSTANBUL'
+
+--kontrol
+SELECT * FROM CUSTOMERS 
+WHERE CITYID = 34
+
+--5--Schreiben Sie eine Abfrage, die alle Personen abruft, die in Istanbul leben, unter Verwendung einer Subabfrage.
+
+SELECT ID, NAMESURNAME, CITYID,
+   (SELECT CITIES.CITY 
+    FROM CITIES 
+    WHERE CITIES.CITYID = CUSTOMERS.CITYID) AS CITY
+FROM CUSTOMERS 
+WHERE CUSTOMERS.CITYID IN (
+    SELECT CITIES.CITYID 
+    FROM CITIES 
+    WHERE CITIES.CITY = 'İSTANBUL')
+
+--6--Schreiben Sie eine Abfrage, die anzeigt, wie viele Kunden es in jeder Stadt gibt.
+
+SELECT CITIES.CITY, 
+    COUNT(CUSTOMERS.ID) AS CUSTOMERCOUNT
+FROM CUSTOMERS
+JOIN  CITIES ON CUSTOMERS.CITYID = CITIES.CITYID
+GROUP BY CITIES.CITY
+ORDER BY CUSTOMERCOUNT DESC
+
+--7--Listen Sie die Städte mit mehr als 10 Kunden zusammen mit der Kundenzahl auf, und sortieren Sie diese absteigend nach der Anzahl der Kunden.
+
+SELECT CITIES.CITY, COUNT(CUSTOMERS.ID) AS CUSTOMERCOUNT
+FROM CUSTOMERS 
+JOIN CITIES ON CUSTOMERS.CITYID = CITIES.CITYID
+GROUP BY CITIES.CITY
+HAVING COUNT(CUSTOMERS.ID) > 10
+ORDER BY CUSTOMERCOUNT DESC
+
+
+--8--Schreiben Sie eine Abfrage, die zeigt, wie viele männliche und wie viele weibliche Kunden es in jeder Stadt gibt.
+
+SELECT CITIES.CITY,
+    SUM(CASE WHEN CUSTOMERS.GENDER = 'E' THEN 1 ELSE 0 END) AS Anzahl_Männer,
+    SUM(CASE WHEN CUSTOMERS.GENDER = 'K' THEN 1 ELSE 0 END) AS Anzahl_Frauen
+FROM CUSTOMERS 
+JOIN CITIES ON CUSTOMERS.CITYID = CITIES.CITYID
+GROUP BY CITIES.CITY
+ORDER BY CITIES.CITY
+   
+--9--Fügen Sie der Tabelle Customers ein neues Feld für die Altersgruppe hinzu. Führen Sie diesen Vorgang sowohl mit dem Management Studio als auch mit SQL-Code durch. Der Feldname soll AGEGROUP sein und der Datentyp Varchar(50).
+
+ALTER TABLE CUSTOMERS
+ADD AGEGROUP VARCHAR(50)
+
+--10--Aktualisieren Sie das Feld 'AGEGROUP' in der Tabelle 'Customers' so, dass es die Altersgruppen 20–35, 36–45, 46–55, 55–65 und über 65 Jahre widerspiegelt.
+
+UPDATE CUSTOMERS
+SET AGEGROUP = CASE
+    WHEN DATEDIFF(YEAR, BIRTHDATE_, GETDATE()) BETWEEN 20 AND 35 THEN '20-35 Jahre'
+    WHEN DATEDIFF(YEAR, BIRTHDATE_, GETDATE()) BETWEEN 36 AND 45 THEN '36-45 Jahre'
+    WHEN DATEDIFF(YEAR, BIRTHDATE_, GETDATE()) BETWEEN 46 AND 55 THEN '46-55 Jahre'
+    WHEN DATEDIFF(YEAR, BIRTHDATE_, GETDATE()) BETWEEN 56 AND 65 THEN '55-65 Jahre'
+    WHEN DATEDIFF(YEAR, BIRTHDATE_, GETDATE()) > 65 THEN 'über 65 Jahre'
+END
+
+SELECT* FROM CUSTOMERS
+
+--11--Listen Sie die Personen auf, die in Istanbul wohnen, aber nicht im Bezirk Kadıköy.
+
+SELECT
+    CUSTOMERS.NAMESURNAME, 
+    CUSTOMERS.TCNUMBER, 
+    CUSTOMERS.GENDER, 
+    CUSTOMERS.EMAIL, 
+    CUSTOMERS.BIRTHDATE_, 
+    CUSTOMERS.CITYID, 
+    DISTRICTS.DISTRICT 
+FROM CUSTOMERS
+JOIN DISTRICTS ON CUSTOMERS.DISTRICTID = DISTRICTS.ID
+JOIN CITIES ON DISTRICTS.CITYID = CITIES.CITYID
+WHERE CITIES.CITY = 'İSTANBUL' AND DISTRICTS.DISTRICT <>'KADIKÖY'
+ORDER BY DISTRICTS.DISTRICT
+
+
+
+--12--Wir möchten die Betreiberinformationen zu den Telefonnummern unserer Kunden erhalten. Neben den Feldern TELNR1 und TELNR2 möchten wir auch die Vorwahl des Betreibers wie (532), (505) anzeigen. Schreiben Sie den erforderlichen SQL-Befehl für diese Abfrage.
+
+SELECT 
+    NAMESURNAME,
+    TELNR1,
+    TELNR2,
+    CASE 
+        WHEN TELNR1 LIKE '(532%' THEN 'Vodafone'
+        WHEN TELNR1 LIKE '(505%' THEN 'Türk Telekom'
+        WHEN TELNR1 LIKE '(541%' THEN 'Turkcell'
+    
+        ELSE 'Bilinmiyor'
+    END AS OPERATÖR1,
+    CASE 
+        WHEN TELNR2 LIKE '(532%' THEN 'Vodafone'
+        WHEN TELNR2 LIKE '(505%' THEN 'Türk Telekom'
+        WHEN TELNR2 LIKE '(541%' THEN 'Turkcell'
+  
+        ELSE 'Bilinmiyor'
+    END AS OPERATÖR2
+FROM 
+    CUSTOMERS
+
+--13--Wir möchten den Betreibern Informationen zu den Telefonnummern unserer Kunden bereitstellen. Telefonnummern lauten beispielsweise „50“oder lassen Sie den Operator „X“ mit „55“, den Operator „Y“ mit „54“ und den Operator „Z“ mit „53“ beginnen.Geben Sie hier die Abfrage ein, die Ihnen die Information liefert, wie viele Kunden wir von welchem ​​Betreiber haben.
+
+SELECT
+SUM(TELNR1_XOPERATORCOUNT + TELNR2_XOPERATORCOUNT) AS XOPERATORTCOUNT,
+SUM(TELNR1_YOPERATORCOUNT + TELNR2_YOPERATORCOUNT) AS YOPERATORTCOUNT,
+SUM(TELNR1_ZOPERATORCOUNT + TELNR2_ZOPERATORCOUNT) AS ZOPERATORTCOUNT
+FROM
+(SELECT
+CASE
+	WHEN TELNR1 LIKE '(50%' OR TELNR1 LIKE '(55%' THEN 1
+	ELSE 0
+	END AS TELNR1_XOPERATORCOUNT,
+CASE
+	WHEN TELNR1 LIKE '(54%' THEN 1
+	ELSE 0
+	END AS TELNR1_YOPERATORCOUNT,
+CASE
+	WHEN TELNR1 LIKE '(53%' THEN 1
+	ELSE 0
+	END AS TELNR1_ZOPERATORCOUNT,
+CASE
+	WHEN TELNR2 LIKE '(50%' OR TELNR2 LIKE '(55%' THEN 1
+	ELSE 0
+	END AS TELNR2_XOPERATORCOUNT,
+CASE
+	WHEN TELNR2 LIKE '(54%' THEN 1
+	ELSE 0
+	END AS TELNR2_YOPERATORCOUNT,
+CASE
+	WHEN TELNR2 LIKE '(53%' THEN 1
+	ELSE 0
+	END AS TELNR2_ZOPERATORCOUNT,
+
+*FROM CUSTOMERS) X
+
+--14--Wir listen die Bezirke mit den meisten Kunden in jeder Stadt nach der Kundenzahl in absteigender Reihenfolge auf.
+SELECT
+    CITIES.CITY,
+    DISTRICTS.DISTRICT,
+    COUNT(CUSTOMERS.ID) AS CUSTOMERCOUNT
+FROM CUSTOMERS
+INNER JOIN DISTRICTS ON CUSTOMERS.DISTRICTID = DISTRICTS.ID
+INNER JOIN CITIES ON DISTRICTS.CITYID = CITIES.CITYID
+GROUP BY CITIES.CITY, DISTRICTS.DISTRICT
+ORDER BY CUSTOMERCOUNT DESC
+
+--15--Schreiben Sie eine Abfrage, die die Geburtstage der Kunden nach Wochentag (Montag, Dienstag, Mittwoch usw.) zurückgibt.
+
+SET LANGUAGE DEUTSCH
+
+SELECT 
+    NAMESURNAME,
+    BIRTHDATE_,
+    DATENAME(WEEKDAY, BIRTHDATE_) AS GEBURTSTAG
+FROM CUSTOMERS
+ORDER BY DATEPART(WEEKDAY, BIRTHDATE_)
